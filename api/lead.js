@@ -3,7 +3,15 @@ export default async function handler(req, res) {
     return res.status(405).json({ message: 'Only POST allowed' });
   }
 
-  const lead = req.body.new;
+  let body;
+  try {
+    body = await parseJsonBody(req);
+  } catch (err) {
+    console.error('Failed to parse body:', err.message);
+    return res.status(400).json({ message: 'Invalid JSON body' });
+  }
+
+  const lead = body.new;
   if (!lead) {
     return res.status(400).json({ message: 'Missing lead data' });
   }
@@ -26,7 +34,7 @@ export default async function handler(req, res) {
           lastname: lastName,
           email: Email,
           phone: phoneNumber,
-          address: '', // No address field from Supabase — left blank
+          address: '',
           city: city,
           state: state,
           zip: Zip_code,
@@ -49,4 +57,14 @@ export default async function handler(req, res) {
     console.error('Failed to send lead:', err.message);
     res.status(500).json({ message: 'Failed to send lead to HubSpot', error: err.message });
   }
+}
+
+// Helper function to parse the body
+async function parseJsonBody(req) {
+  const chunks = [];
+  for await (const chunk of req) {
+    chunks.push(chunk);
+  }
+  const raw = Buffer.concat(chunks).toString('utf8');
+  return JSON.parse(raw);
 }
