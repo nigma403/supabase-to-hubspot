@@ -8,7 +8,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ message: 'Missing lead data' });
   }
 
-  const { fullName, Email, phoneNumber, Zip_code } = lead;
+  const { fullName, Email, phoneNumber, Zip_code, state, city } = lead;
 
   const [firstName, ...rest] = (fullName || '').split(' ');
   const lastName = rest.join(' ') || 'Unknown';
@@ -22,13 +22,17 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         properties: {
-          email: Email,
           firstname: firstName,
           lastname: lastName,
+          email: Email,
           phone: phoneNumber,
-          zip_code: Zip_code,
+          address: '', // No address field from Supabase — left blank
+          city: city,
+          state: state,
+          zip: Zip_code,
           lifecyclestage: 'salesqualifiedlead',
-          hubspot_owner_id: '79871537'
+          hubspot_owner_id: '79871537',
+          lead_source: 'Neu'
         }
       })
     });
@@ -36,12 +40,13 @@ export default async function handler(req, res) {
     const data = await hubspotRes.json();
 
     if (!hubspotRes.ok) {
+      console.error('HubSpot error:', data);
       throw new Error(JSON.stringify(data));
     }
 
     res.status(200).json({ message: 'Lead sent to HubSpot', data });
   } catch (err) {
-    console.error('HubSpot error:', err.message);
+    console.error('Failed to send lead:', err.message);
     res.status(500).json({ message: 'Failed to send lead to HubSpot', error: err.message });
   }
 }
